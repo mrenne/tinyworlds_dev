@@ -1,1 +1,215 @@
-code here
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tinyworlds_dev</title>
+    <style>
+        /* Basic reset and body styling */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* Prevents scrollbars */
+            background-color: #000000; /* Black background */
+            font-family: 'Inter', 'Arial', sans-serif; /* Modern sans-serif font */
+            color: #ffffff; /* White text */
+        }
+
+        /* Canvas for abstract art background */
+        #interactive-canvas {
+            position: fixed; /* Changed from absolute to fixed to ensure it covers viewport */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1; /* Behind the content */
+        }
+
+        /* Container for the text content */
+        .content-container {
+            position: relative; /* Ensure it's on top of the canvas */
+            z-index: 2; /* Above the canvas */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh; /* Full viewport height */
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box; /* Include padding in width/height calculation */
+        }
+
+        /* Title styling */
+        .title {
+            font-size: 3rem; /* Responsive font size */
+            font-weight: bold;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5); /* Subtle glow */
+        }
+
+        /* Paragraph styling */
+        .description {
+            font-size: 1.2rem; /* Responsive font size */
+            max-width: 600px; /* Limit width for readability */
+            line-height: 1.6;
+        }
+
+        /* Media query for smaller screens */
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2.2rem;
+            }
+            .description {
+                font-size: 1rem;
+            }
+        }
+         @media (max-width: 480px) {
+            .title {
+                font-size: 1.8rem;
+            }
+            .description {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <canvas id="interactive-canvas"></canvas>
+
+    <div class="content-container">
+        <h1 class="title">tinyworlds_dev</h1>
+        <p class="description">
+            This is a project to build and populate tiny worlds using human creativity partnered with emerging AI technologies.
+        </p>
+    </div>
+
+    <script>
+        // Get the canvas element and its 2D rendering context
+        const canvas = document.getElementById('interactive-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Mouse position object
+        let mouse = {
+            x: null,
+            y: null,
+            radius: 100 // Radius of interaction effect
+        };
+
+        // Array to store particles
+        let particlesArray = [];
+        const numberOfParticles = 100; // Adjust for more/less particles
+
+        // Set canvas dimensions to full window size
+        function setCanvasSize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        setCanvasSize(); // Initial set
+
+        // Event listener for mouse movement to update mouse coordinates
+        window.addEventListener('mousemove', function(event) {
+            mouse.x = event.clientX;
+            mouse.y = event.clientY;
+        });
+
+        // Event listener for window resize to adjust canvas size
+        window.addEventListener('resize', function() {
+            setCanvasSize();
+            initParticles(); // Re-initialize particles for new canvas size if desired
+        });
+
+
+        // Particle class
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = Math.random() * 3 + 1; // Random size between 1 and 4
+                this.baseX = this.x; // Initial x position
+                this.baseY = this.y; // Initial y position
+                this.density = (Math.random() * 30) + 1; // Random density for movement speed
+                this.color = '#ffffff'; // Particle color (white)
+                this.opacity = Math.random() * 0.5 + 0.2; // Random opacity for depth
+            }
+
+            // Method to draw a single particle
+            draw() {
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // Method to update particle position based on mouse interaction
+            update() {
+                // Calculate distance from particle to mouse
+                let dx = mouse.x - this.x;
+                let dy = mouse.y - this.y;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+                let forceDirectionX = dx / distance;
+                let forceDirectionY = dy / distance;
+
+                // Calculate movement force based on distance
+                let maxDistance = mouse.radius;
+                let force = (maxDistance - distance) / maxDistance; // Normalized force
+                
+                // If particle is within mouse radius, move it away
+                if (distance < mouse.radius) {
+                    // The closer the particle, the stronger the push
+                    this.x -= forceDirectionX * force * this.density * 0.2; // Adjust multiplier for stronger/weaker push
+                    this.y -= forceDirectionY * force * this.density * 0.2;
+                } else {
+                    // If particle is outside radius, gradually return to base position
+                    if (this.x !== this.baseX) {
+                        let returnDx = this.x - this.baseX;
+                        this.x -= returnDx / 20; // Speed of return
+                    }
+                    if (this.y !== this.baseY) {
+                        let returnDy = this.y - this.baseY;
+                        this.y -= returnDy / 20; // Speed of return
+                    }
+                }
+            }
+        }
+
+        // Function to initialize particles
+        function initParticles() {
+            particlesArray = []; // Clear existing particles
+            for (let i = 0; i < numberOfParticles; i++) {
+                // Distribute particles more evenly across the screen
+                let x = Math.random() * canvas.width;
+                let y = Math.random() * canvas.height;
+                particlesArray.push(new Particle(x, y));
+            }
+        }
+        initParticles(); // Create initial particles
+
+        // Animation loop
+        function animate() {
+            // Clear the canvas on each frame with a semi-transparent black for a trailing effect
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; // Adjust alpha for more/less trail
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Update and draw each particle
+            for (let i = 0; i < particlesArray.length; i++) {
+                particlesArray[i].update();
+                particlesArray[i].draw();
+            }
+            requestAnimationFrame(animate); // Request the next frame
+        }
+        
+        // Start the animation loop once the window is loaded
+        window.onload = function() {
+            setCanvasSize();
+            initParticles();
+            animate();
+        };
+
+    </script>
+</body>
+</html>
