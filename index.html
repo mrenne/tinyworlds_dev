@@ -19,43 +19,116 @@
 
         /* Canvas for abstract art background */
         #interactive-canvas {
-            position: fixed; /* Changed from absolute to fixed to ensure it covers viewport */
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 1; /* Behind the content */
+            z-index: 1; /* Behind the content and menu */
         }
 
         /* Container for the text content */
         .content-container {
-            position: relative; /* Ensure it's on top of the canvas */
-            z-index: 2; /* Above the canvas */
+            position: relative;
+            z-index: 3; /* Above the canvas and menu icon (but below open menu) */
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            height: 100vh; /* Full viewport height */
+            height: 100vh;
             text-align: center;
             padding: 20px;
-            box-sizing: border-box; /* Include padding in width/height calculation */
+            box-sizing: border-box;
         }
 
         /* Title styling */
         .title {
-            font-size: 3rem; /* Responsive font size */
+            font-size: 3rem;
             font-weight: bold;
             margin-bottom: 20px;
             letter-spacing: 2px;
-            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5); /* Subtle glow */
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
         }
 
         /* Paragraph styling */
         .description {
-            font-size: 1.2rem; /* Responsive font size */
-            max-width: 600px; /* Limit width for readability */
+            font-size: 1.2rem;
+            max-width: 600px;
             line-height: 1.6;
         }
+
+        /* Hamburger Menu Styles */
+        .menu-icon {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1001; /* Above everything except open menu */
+            cursor: pointer;
+            padding: 10px;
+            background-color: rgba(0,0,0,0.3); /* Slight background for visibility */
+            border-radius: 5px;
+        }
+
+        .menu-icon .bar {
+            display: block;
+            width: 25px;
+            height: 3px;
+            margin: 5px auto;
+            background-color: #ffffff;
+            transition: all 0.3s ease-in-out;
+        }
+
+        /* Styling for the 'X' icon when menu is open */
+        .menu-icon.open .bar:nth-child(1) {
+            transform: translateY(8px) rotate(45deg);
+        }
+        .menu-icon.open .bar:nth-child(2) {
+            opacity: 0;
+        }
+        .menu-icon.open .bar:nth-child(3) {
+            transform: translateY(-8px) rotate(-45deg);
+        }
+
+        .nav-menu {
+            position: fixed;
+            top: 0;
+            left: -300px; /* Start off-screen */
+            width: 250px;
+            height: 100%;
+            background-color: #000000;
+            border-right: 1px solid #333333; /* Subtle border */
+            z-index: 1000; /* Below menu icon when closed, above content when open */
+            padding-top: 80px; /* Space for the icon area */
+            transition: left 0.3s ease-in-out;
+            box-shadow: 2px 0 5px rgba(255,255,255,0.1);
+        }
+
+        .nav-menu.open {
+            left: 0; /* Slide in */
+        }
+
+        .nav-menu ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .nav-menu ul li {
+            padding: 15px 20px;
+        }
+
+        .nav-menu ul li a {
+            text-decoration: none;
+            color: #ffffff;
+            font-size: 1.2rem;
+            display: block;
+            transition: color 0.2s ease-in-out;
+        }
+
+        .nav-menu ul li a:hover {
+            color: #aaaaaa; /* Lighter gray on hover */
+        }
+
 
         /* Media query for smaller screens */
         @media (max-width: 768px) {
@@ -65,6 +138,10 @@
             .description {
                 font-size: 1rem;
             }
+            .nav-menu {
+                width: 200px; /* Slightly smaller menu on mobile */
+                left: -250px;
+            }
         }
          @media (max-width: 480px) {
             .title {
@@ -73,17 +150,38 @@
             .description {
                 font-size: 0.9rem;
             }
+            .menu-icon {
+                top: 15px;
+                left: 15px;
+            }
+            .nav-menu {
+                padding-top: 70px;
+            }
         }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <div class="menu-icon" id="menuIcon">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+    </div>
+
+    <nav class="nav-menu" id="navMenu">
+        <ul>
+            <li><a href="#about">About</a></li>
+            <li><a href="#projects">Projects</a></li>
+            <li><a href="#read">Read</a></li>
+        </ul>
+    </nav>
+
     <canvas id="interactive-canvas"></canvas>
 
     <div class="content-container">
         <h1 class="title">tinyworlds_dev</h1>
         <p class="description">
-            A project to imagine and build tiny worlds using human creativity partnered with emerging AI technologies.
+            This is a project to build and populate tiny worlds using human creativity partnered with emerging AI technologies.
         </p>
     </div>
 
@@ -108,7 +206,7 @@
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
         }
-        setCanvasSize(); // Initial set
+        // No initial call here, will be called in window.onload
 
         // Event listener for mouse movement to update mouse coordinates
         window.addEventListener('mousemove', function(event) {
@@ -119,7 +217,10 @@
         // Event listener for window resize to adjust canvas size
         window.addEventListener('resize', function() {
             setCanvasSize();
-            initParticles(); // Re-initialize particles for new canvas size if desired
+            // Only re-initialize particles if the canvas actually exists and has a context
+            if (canvas && ctx) {
+                initParticles();
+            }
         });
 
 
@@ -180,34 +281,60 @@
         // Function to initialize particles
         function initParticles() {
             particlesArray = []; // Clear existing particles
-            for (let i = 0; i < numberOfParticles; i++) {
-                // Distribute particles more evenly across the screen
-                let x = Math.random() * canvas.width;
-                let y = Math.random() * canvas.height;
-                particlesArray.push(new Particle(x, y));
+            // Ensure canvas has dimensions before creating particles
+            if (canvas.width > 0 && canvas.height > 0) {
+                for (let i = 0; i < numberOfParticles; i++) {
+                    // Distribute particles more evenly across the screen
+                    let x = Math.random() * canvas.width;
+                    let y = Math.random() * canvas.height;
+                    particlesArray.push(new Particle(x, y));
+                }
             }
         }
-        initParticles(); // Create initial particles
+        // No initial call here, will be called in window.onload
 
         // Animation loop
         function animate() {
             // Clear the canvas on each frame with a semi-transparent black for a trailing effect
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; // Adjust alpha for more/less trail
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Update and draw each particle
-            for (let i = 0; i < particlesArray.length; i++) {
-                particlesArray[i].update();
-                particlesArray[i].draw();
+            if (ctx) { // Check if context exists
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; // Adjust alpha for more/less trail
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Update and draw each particle
+                for (let i = 0; i < particlesArray.length; i++) {
+                    particlesArray[i].update();
+                    particlesArray[i].draw();
+                }
             }
             requestAnimationFrame(animate); // Request the next frame
         }
         
-        // Start the animation loop once the window is loaded
+        // Hamburger Menu JavaScript
+        const menuIcon = document.getElementById('menuIcon');
+        const navMenu = document.getElementById('navMenu');
+
+        menuIcon.addEventListener('click', () => {
+            menuIcon.classList.toggle('open');
+            navMenu.classList.toggle('open');
+        });
+
+        // Close menu if user clicks outside of it (on the content or canvas)
+        document.addEventListener('click', function(event) {
+            const isClickInsideMenu = navMenu.contains(event.target);
+            const isClickOnIcon = menuIcon.contains(event.target);
+
+            if (!isClickInsideMenu && !isClickOnIcon && navMenu.classList.contains('open')) {
+                menuIcon.classList.remove('open');
+                navMenu.classList.remove('open');
+            }
+        });
+
+
+        // Start the animation loop and initial setup once the window is loaded
         window.onload = function() {
-            setCanvasSize();
-            initParticles();
-            animate();
+            setCanvasSize(); // Set canvas size first
+            initParticles();   // Then initialize particles
+            animate();         // Then start animation
         };
 
     </script>
