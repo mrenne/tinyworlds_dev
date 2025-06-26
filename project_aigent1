@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Agent Behavior Simulation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Jersey+15&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Basic reset and body styling */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000000;
+            color: #ffffff;
+            font-family: 'Inter', 'Arial', sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Main container for the app */
+        .app-container {
+            display: flex;
+            width: 95%;
+            height: 95%;
+            max-width: 1400px;
+            max-height: 900px;
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(255,255,255,0.1);
+        }
+
+        /* Simulation canvas styling */
+        #simulationCanvas {
+            flex-grow: 1;
+            height: 100%;
+            background-color: #000;
+            border-top-left-radius: 8px;
+            border-bottom-left-radius: 8px;
+        }
+
+        /* Settings panel styling */
+        .settings-panel {
+            width: 280px;
+            flex-shrink: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            background-color: #111;
+            border-left: 1px solid #333;
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
+            overflow-y: auto;
+        }
+
+        /* Use Jersey 15 for titles */
+        .settings-panel h1, .settings-panel h2 {
+            font-family: 'Jersey 15', 'Inter', 'Arial', sans-serif;
+            text-align: center;
+            font-weight: normal;
+            letter-spacing: 1px;
+            color: #fff;
+        }
+        .settings-panel h1 {
+            font-size: 2.5rem;
+            margin-top: 0;
+            margin-bottom: 5px;
+        }
+         .settings-panel h2 {
+            font-size: 1.5rem;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        /* Form group for each setting */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            color: #ccc;
+        }
+        
+        .form-group .value-display {
+            float: right;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        /* Slider styling */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 5px;
+            background: #444;
+            border-radius: 5px;
+            outline: none;
+            opacity: 0.7;
+            transition: opacity .2s;
+        }
+
+        input[type="range"]:hover {
+            opacity: 1;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #fff;
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid #333;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: #fff;
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid #333;
+        }
+
+        /* Button styling */
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            font-family: 'Jersey 15', 'Inter', 'Arial', sans-serif;
+            font-size: 1.4rem;
+            letter-spacing: 1px;
+            color: #fff;
+            background-color: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #3a3a3a;
+            border-color: #666;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 800px) {
+            .app-container {
+                flex-direction: column;
+                width: 100%;
+                height: 100%;
+                border-radius: 0;
+            }
+            .settings-panel {
+                width: 100%;
+                height: 300px; /* Fixed height for settings on mobile */
+                flex-shrink: 0;
+                border-left: none;
+                border-top: 1px solid #333;
+                border-radius: 0;
+            }
+            #simulationCanvas {
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <canvas id="simulationCanvas"></canvas>
+        <div class="settings-panel">
+            <h1>AI Agents</h1>
+            
+            <h2>Simulation Controls</h2>
+            <div class="form-group">
+                <label for="agentCount">Agent Count <span class="value-display" id="agentCountValue">100</span></label>
+                <input type="range" id="agentCount" min="10" max="300" value="100">
+            </div>
+            <div class="form-group">
+                <label for="maxSpeed">Max Speed <span class="value-display" id="maxSpeedValue">2</span></label>
+                <input type="range" id="maxSpeed" min="0.5" max="5" value="2" step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="perceptionRadius">Perception Radius <span class="value-display" id="perceptionRadiusValue">50</span></label>
+                <input type="range" id="perceptionRadius" min="10" max="150" value="50">
+            </div>
+
+            <h2>Behavioral Forces</h2>
+            <div class="form-group">
+                <label for="alignmentForce">Alignment <span class="value-display" id="alignmentForceValue">1</span></label>
+                <input type="range" id="alignmentForce" min="0" max="2" value="1" step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="cohesionForce">Cohesion <span class="value-display" id="cohesionForceValue">1</span></label>
+                <input type="range" id="cohesionForce" min="0" max="2" value="1" step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="separationForce">Separation <span class="value-display" id="separationForceValue">1.2</span></label>
+                <input type="range" id="separationForce" min="0" max="3" value="1.2" step="0.1">
+            </div>
+
+            <button id="resetButton" class="btn">Reset Simulation</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simulationCanvas');
+        const ctx = canvas.getContext('2d');
+        let agents = [];
+
+        // --- Settings ---
+        const settings = {
+            agentCount: 100,
+            maxSpeed: 2,
+            perceptionRadius: 50,
+            alignmentForce: 1,
+            cohesionForce: 1,
+            separationForce: 1.2
+        };
+
+        // --- UI Input Handling ---
+        const inputs = {
+            agentCount: document.getElementById('agentCount'),
+            maxSpeed: document.getElementById('maxSpeed'),
+            perceptionRadius: document.getElementById('perceptionRadius'),
+            alignmentForce: document.getElementById('alignmentForce'),
+            cohesionForce: document.getElementById('cohesionForce'),
+            separationForce: document.getElementById('separationForce'),
+            resetButton: document.getElementById('resetButton')
+        };
+
+        const valueDisplays = {
+            agentCount: document.getElementById('agentCountValue'),
+            maxSpeed: document.getElementById('maxSpeedValue'),
+            perceptionRadius: document.getElementById('perceptionRadiusValue'),
+            alignmentForce: document.getElementById('alignmentForceValue'),
+            cohesionForce: document.getElementById('cohesionForceValue'),
+            separationForce: document.getElementById('separationForceValue')
+        };
+        
+        // Update settings from UI
+        function updateSettings() {
+            settings.agentCount = parseFloat(inputs.agentCount.value);
+            settings.maxSpeed = parseFloat(inputs.maxSpeed.value);
+            settings.perceptionRadius = parseFloat(inputs.perceptionRadius.value);
+            settings.alignmentForce = parseFloat(inputs.alignmentForce.value);
+            settings.cohesionForce = parseFloat(inputs.cohesionForce.value);
+            settings.separationForce = parseFloat(inputs.separationForce.value);
+
+            valueDisplays.agentCount.textContent = settings.agentCount;
+            valueDisplays.maxSpeed.textContent = settings.maxSpeed.toFixed(1);
+            valueDisplays.perceptionRadius.textContent = settings.perceptionRadius;
+            valueDisplays.alignmentForce.textContent = settings.alignmentForce.toFixed(1);
+            valueDisplays.cohesionForce.textContent = settings.cohesionForce.toFixed(1);
+            valueDisplays.separationForce.textContent = settings.separationForce.toFixed(1);
+        }
+
+        Object.values(inputs).forEach(input => {
+            if (input.type === 'range') {
+                input.addEventListener('input', updateSettings);
+            }
+        });
+        
+        inputs.resetButton.addEventListener('click', initializeSimulation);
+
+        // --- Vector Math Helpers ---
+        class Vector {
+            constructor(x = 0, y = 0) {
+                this.x = x;
+                this.y = y;
+            }
+            add(v) { this.x += v.x; this.y += v.y; return this; }
+            sub(v) { this.x -= v.x; this.y -= v.y; return this; }
+            mult(s) { this.x *= s; this.y *= s; return this; }
+            div(s) { if (s !== 0) { this.x /= s; this.y /= s; } return this; }
+            mag() { return Math.sqrt(this.x * this.x + this.y * this.y); }
+            normalize() { const m = this.mag(); if (m > 0) { this.div(m); } return this; }
+            limit(max) { if (this.mag() > max) { this.normalize().mult(max); } return this; }
+            static sub(v1, v2) { return new Vector(v1.x - v2.x, v1.y - v2.y); }
+        }
+
+        // --- Agent Class ---
+        class Agent {
+            constructor(x, y) {
+                this.position = new Vector(x, y);
+                this.velocity = new Vector(Math.random() * 2 - 1, Math.random() * 2 - 1);
+                this.velocity.normalize().mult(Math.random() * settings.maxSpeed);
+                this.acceleration = new Vector();
+                this.maxSpeed = settings.maxSpeed;
+                this.maxForce = 0.1; // Steering force limit
+                this.radius = 3;
+            }
+
+            // Keep agent within canvas bounds
+            edges() {
+                if (this.position.x > canvas.width) this.position.x = 0;
+                else if (this.position.x < 0) this.position.x = canvas.width;
+                if (this.position.y > canvas.height) this.position.y = 0;
+                else if (this.position.y < 0) this.position.y = canvas.height;
+            }
+
+            // Apply steering forces (alignment, cohesion, separation)
+            flock(neighbors) {
+                this.maxSpeed = settings.maxSpeed;
+                let alignment = new Vector();
+                let cohesion = new Vector();
+                let separation = new Vector();
+                let total = 0;
+
+                for (let other of neighbors) {
+                    let d = Vector.sub(this.position, other.position).mag();
+                    if (other !== this && d < settings.perceptionRadius) {
+                        // Alignment: Steer towards the average heading of neighbors
+                        alignment.add(other.velocity);
+
+                        // Cohesion: Steer to move toward the average position of neighbors
+                        cohesion.add(other.position);
+
+                        // Separation: Steer to avoid crowding neighbors
+                        let diff = Vector.sub(this.position, other.position);
+                        if (d > 0) { // Avoid division by zero
+                            diff.div(d * d); // Weight by inverse square of distance
+                        }
+                        separation.add(diff);
+                        
+                        total++;
+                    }
+                }
+
+                if (total > 0) {
+                    alignment.div(total).normalize().mult(this.maxSpeed);
+                    alignment.sub(this.velocity).limit(this.maxForce);
+
+                    cohesion.div(total);
+                    cohesion.sub(this.position).normalize().mult(this.maxSpeed);
+                    cohesion.sub(this.velocity).limit(this.maxForce);
+
+                    separation.div(total).normalize().mult(this.maxSpeed);
+                    separation.sub(this.velocity).limit(this.maxForce);
+                }
+                
+                // Apply forces with weights from settings
+                this.acceleration.add(alignment.mult(settings.alignmentForce));
+                this.acceleration.add(cohesion.mult(settings.cohesionForce));
+                this.acceleration.add(separation.mult(settings.separationForce));
+            }
+
+            // Update agent's state
+            update() {
+                this.velocity.add(this.acceleration);
+                this.velocity.limit(this.maxSpeed);
+                this.position.add(this.velocity);
+                this.acceleration.mult(0); // Reset acceleration each frame
+            }
+
+            // Draw the agent on the canvas
+            draw() {
+                ctx.save();
+                ctx.translate(this.position.x, this.position.y);
+                ctx.rotate(Math.atan2(this.velocity.y, this.velocity.x));
+                ctx.beginPath();
+                // Triangle shape
+                ctx.moveTo(this.radius * 2, 0);
+                ctx.lineTo(-this.radius, this.radius);
+                ctx.lineTo(-this.radius, -this.radius);
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // --- Main Simulation Logic ---
+        function initializeSimulation() {
+            updateSettings();
+            agents = [];
+            for (let i = 0; i < settings.agentCount; i++) {
+                agents.push(new Agent(Math.random() * canvas.width, Math.random() * canvas.height));
+            }
+        }
+
+        function animate() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; // Fading trail effect
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Re-create agent list if count has changed
+            if (agents.length !== settings.agentCount) {
+                initializeSimulation();
+            }
+
+            for (let agent of agents) {
+                agent.edges();
+                agent.flock(agents);
+                agent.update();
+                agent.draw();
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // --- Initial Setup ---
+        function setupCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            initializeSimulation();
+        }
+
+        window.onload = () => {
+            setupCanvas();
+            animate();
+        };
+        
+        window.onresize = setupCanvas;
+
+    </script>
+</body>
+</html>
