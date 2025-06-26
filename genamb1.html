@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Centered YouTube Embed</title>
+    <!-- Tailwind CSS CDN for easy styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom font for a modern look */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-black text-white min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- Back Button - Positioned at the top-left corner -->
+    <button onclick="history.back()"
+            class="absolute top-4 left-4 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-75">
+        &larr; Back
+    </button>
+
+    <!-- YouTube Video Container -->
+    <!-- This div acts as a wrapper for the embedded video, ensuring it's centered -->
+    <div class="relative w-full max-w-4xl aspect-video bg-gray-900 rounded-lg overflow-hidden shadow-2xl flex items-center justify-center">
+        <!--
+            PASTE YOUR YOUTUBE EMBED CODE HERE!
+
+            Example of a YouTube embed code:
+            <iframe width="560" height="315" src="https://www.youtube.com/embed/yourvideoid"
+            frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen class="absolute top-0 left-0 w-full h-full"></iframe>
+
+            Make sure to replace the placeholder iframe below with your actual YouTube embed code.
+            The 'absolute', 'top-0', 'left-0', 'w-full', 'h-full' classes are important
+            for the video to fill its container responsively.
+        -->
+        <iframe width="560" height="315" src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+        frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen class="absolute top-0 left-0 w-full h-full rounded-lg"></iframe>
+    </div>
+
+</body>
+</html>
