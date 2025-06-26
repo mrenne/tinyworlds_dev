@@ -1,1 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projects - tinyworlds_dev</title>
+    <!-- Link to Google Fonts: Jersey 15 -->
+    <link href="https://fonts.googleapis.com/css2?family=Jersey+15&display=swap" rel="stylesheet">
+    <!-- Link to Google Fonts: Inter (fallback) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Basic reset and body styling */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            background-color: #000000; /* Black background */
+            font-family: 'Jersey 15', 'Inter', 'Arial', sans-serif;
+            color: #ffffff; /* White text */
+            overflow-x: hidden; /* Prevent horizontal scroll, allow vertical */
+        }
+
+        /* Canvas for abstract art background */
+        #interactive-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1; /* Behind the content and menu */
+        }
+
+        /* Container for the text content - modified for scrolling */
+        .content-container {
+            position: relative;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            min-height: 100vh; /* Ensure it fills viewport at minimum */
+            height: auto; /* Allow it to grow */
+            padding: 120px 20px 50px 20px; /* Top padding for menu space, bottom for breathing room */
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        /* Page Title styling */
+        .title {
+            font-size: 3.5rem;
+            font-weight: normal;
+            margin-bottom: 50px; /* More space below main title */
+            letter-spacing: 1px;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+        }
+
+        /* Container for the list of projects */
+        .projects-list {
+            display: flex;
+            flex-direction: column;
+            gap: 40px; /* Space between project items */
+            width: 100%;
+            max-width: 700px; /* Constrain width of project list */
+        }
+
+        /* Styling for a single project item */
+        .project-item {
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 25px;
+            text-align: left;
+            transition: background-color 0.3s ease;
+        }
+
+        .project-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Project-specific title */
+        .project-title {
+            font-size: 2.2rem;
+            font-weight: normal;
+            margin: 0 0 10px 0;
+        }
+
+        /* Paragraph styling */
+        .description {
+            font-size: 1.3rem;
+            line-height: 1.7;
+            margin-bottom: 15px;
+            color: #cccccc; /* Slightly dimmer than titles for contrast */
+        }
+        
+        /* Project image styling */
+        .project-image {
+            width: 100%;
+            height: auto;
+            border-radius: 5px;
+            margin-top: 15px;
+            border: 1px solid #444;
+        }
+
+        /* Hamburger Menu Styles */
+        .menu-icon {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1001;
+            cursor: pointer;
+            padding: 10px;
+            background-color: rgba(0,0,0,0.3);
+            border-radius: 5px;
+        }
+
+        .menu-icon .bar {
+            display: block;
+            width: 25px;
+            height: 3px;
+            margin: 5px auto;
+            background-color: #ffffff;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .menu-icon.open .bar:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+        .menu-icon.open .bar:nth-child(2) { opacity: 0; }
+        .menu-icon.open .bar:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+
+        .nav-menu {
+            position: fixed;
+            top: 0;
+            left: -300px;
+            width: 250px;
+            height: 100%;
+            background-color: #000000;
+            border-right: 1px solid #333333;
+            z-index: 1000;
+            padding-top: 80px;
+            transition: left 0.3s ease-in-out;
+            box-shadow: 2px 0 5px rgba(255,255,255,0.1);
+        }
+
+        .nav-menu.open { left: 0; }
+        .nav-menu ul { list-style: none; padding: 0; margin: 0; }
+        .nav-menu ul li { padding: 15px 20px; }
+        .nav-menu ul li a {
+            text-decoration: none;
+            color: #ffffff;
+            font-size: 1.3rem;
+            display: block;
+            transition: color 0.2s ease-in-out;
+        }
+        .nav-menu ul li a:hover { color: #aaaaaa; }
+        .nav-menu ul li a.active { color: #cccccc; }
+
+        /* Media queries */
+        @media (max-width: 768px) {
+            .title { font-size: 2.8rem; }
+            .project-title { font-size: 1.8rem; }
+            .description { font-size: 1.1rem; }
+            .nav-menu { width: 200px; left: -250px; }
+            .nav-menu ul li a { font-size: 1.1rem; }
+        }
+        @media (max-width: 480px) {
+            .title { font-size: 2.2rem; }
+            .project-title { font-size: 1.6rem; }
+            .description { font-size: 1rem; }
+            .menu-icon { top: 15px; left: 15px; }
+            .nav-menu { padding-top: 70px; }
+            .nav-menu ul li a { font-size: 1rem; }
+            .project-item { padding: 20px; }
+            .content-container { padding-top: 100px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hamburger Icon -->
+    <div class="menu-icon" id="menuIcon">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+    </div>
+
+    <!-- Navigation Menu -->
+    <nav class="nav-menu" id="navMenu">
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="about.html">About</a></li>
+            <li><a href="projects.html" class="active">Projects</a></li>
+            <li><a href="read.html">Read</a></li>
+        </ul>
+    </nav>
+
+    <!-- Canvas for the interactive background -->
+    <canvas id="interactive-canvas"></canvas>
+
+    <!-- Container for the "Projects" page content -->
+    <div class="content-container">
+        <h1 class="title">Projects</h1>
+
+        <div class="projects-list">
+            <!-- Project 1 -->
+            <div class="project-item">
+                <h2 class="project-title">Project Alpha: Genesis World</h2>
+                <p class="description">
+                    The foundational project aimed at creating a self-sustaining digital ecosystem. This world utilizes procedural generation powered by AI to develop terrain, flora, and atmospheric conditions, setting the stage for future inhabitants.
+                </p>
+                <img class="project-image" src="https://placehold.co/700x400/000000/FFFFFF?text=Project+Image" alt="Placeholder image for Project Alpha">
+            </div>
+
+            <!-- Project 2 -->
+            <div class="project-item">
+                <h2 class="project-title">Project Beta: Emergent Behavior</h2>
+                <p class="description">
+                    Introducing the first digital lifeforms. This project focuses on developing AI agents with simple, rule-based behaviors. We observe how these agents interact with each other and the Genesis World to create complex, emergent societal patterns.
+                </p>
+                <img class="project-image" src="https://placehold.co/700x400/000000/FFFFFF?text=Project+Image" alt="Placeholder image for Project Beta">
+            </div>
+            
+            <!-- Add more .project-item divs here for future projects -->
+        </div>
+    </div>
+
+    <script>
+        // All JavaScript is identical to the other pages for consistency.
+        const canvas = document.getElementById('interactive-canvas');
+        const ctx = canvas.getContext('2d');
+        let mouse = { x: null, y: null, radius: 100 };
+        let particlesArray = [];
+        const numberOfParticles = 150; // Slightly more particles for a larger page
+
+        function setCanvasSize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('mousemove', function(event) {
+            mouse.x = event.clientX;
+            mouse.y = event.clientY;
+        });
+
+        window.addEventListener('resize', function() {
+            setCanvasSize();
+            if (canvas && ctx) { initParticles(); }
+        });
+
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = Math.random() * 3 + 1;
+                this.baseX = this.x;
+                this.baseY = this.y;
+                this.density = (Math.random() * 30) + 1;
+                this.opacity = Math.random() * 0.5 + 0.2;
+            }
+            draw() {
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.closePath();
+                ctx.fill();
+            }
+            update() {
+                if (mouse.x === null) return;
+                let dx = mouse.x - this.x;
+                let dy = mouse.y - this.y;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance < mouse.radius) {
+                    let forceDirectionX = dx / distance;
+                    let forceDirectionY = dy / distance;
+                    let maxDistance = mouse.radius;
+                    let force = (maxDistance - distance) / maxDistance;
+                    this.x -= forceDirectionX * force * this.density * 0.2;
+                    this.y -= forceDirectionY * force * this.density * 0.2;
+                } else {
+                    if (this.x !== this.baseX) { this.x -= (this.x - this.baseX) / 20; }
+                    if (this.y !== this.baseY) { this.y -= (this.y - this.baseY) / 20; }
+                }
+            }
+        }
+
+        function initParticles() {
+            particlesArray = [];
+            if (canvas.width > 0 && canvas.height > 0) {
+                for (let i = 0; i < numberOfParticles; i++) {
+                    particlesArray.push(new Particle(Math.random() * canvas.width, Math.random() * document.body.scrollHeight));
+                }
+            }
+        }
+
+        function animate() {
+            if (ctx) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                for (let i = 0; i < particlesArray.length; i++) {
+                    particlesArray[i].update();
+                    particlesArray[i].draw();
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+        
+        const menuIcon = document.getElementById('menuIcon');
+        const navMenu = document.getElementById('navMenu');
+
+        menuIcon.addEventListener('click', () => {
+            menuIcon.classList.toggle('open');
+            navMenu.classList.toggle('open');
+        });
+
+        document.addEventListener('click', function(event) {
+            const isClickInsideMenu = navMenu.contains(event.target);
+            const isClickOnIcon = menuIcon.contains(event.target);
+            if (!isClickInsideMenu && !isClickOnIcon && navMenu.classList.contains('open')) {
+                menuIcon.classList.remove('open');
+                navMenu.classList.remove('open');
+            }
+        });
+
+        window.onload = function() {
+            setCanvasSize();
+            initParticles();
+            animate();
+        };
+    </script>
+</body>
+</html>
 
