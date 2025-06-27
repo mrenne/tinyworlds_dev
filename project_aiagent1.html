@@ -10,7 +10,8 @@
         /* Basic reset and body styling */
         body, html {
             margin: 0;
-            padding: 0;
+            padding: 20px; /* Add padding around the entire app */
+            box-sizing: border-box; /* Include padding in size calculation */
             width: 100%;
             height: 100%;
             background-color: #000000;
@@ -25,8 +26,8 @@
         /* Main container for the app */
         .app-container {
             display: flex;
-            width: 95%;
-            height: 95%;
+            width: 100%; /* Fill the padded body space */
+            height: 100%; /* Fill the padded body space */
             max-width: 1400px;
             max-height: 900px;
             background-color: #1a1a1a;
@@ -55,6 +56,8 @@
             border-top-right-radius: 8px;
             border-bottom-right-radius: 8px;
             overflow-y: auto;
+            display: flex; /* Use flexbox for vertical layout */
+            flex-direction: column; /* Stack children vertically */
         }
 
         /* Use Jersey 15 for titles */
@@ -64,6 +67,7 @@
             font-weight: normal;
             letter-spacing: 1px;
             color: #fff;
+            flex-shrink: 0; /* Prevent titles from shrinking */
         }
         .settings-panel h1 {
             font-size: 2.5rem;
@@ -81,6 +85,7 @@
         /* Form group for each setting */
         .form-group {
             margin-bottom: 20px;
+            flex-shrink: 0; /* Prevent form groups from shrinking */
         }
 
         .form-group label {
@@ -133,6 +138,15 @@
             border: 2px solid #333;
         }
 
+        /* Button container */
+        .panel-footer {
+            margin-top: auto; /* Pushes this block to the bottom */
+            padding-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px; /* Space between buttons */
+        }
+
         /* Button styling */
         .btn {
             display: block;
@@ -155,6 +169,9 @@
 
         /* Responsive adjustments */
         @media (max-width: 800px) {
+            body, html {
+                padding: 0; /* Remove padding on small screens for more space */
+            }
             .app-container {
                 flex-direction: column;
                 width: 100%;
@@ -163,7 +180,8 @@
             }
             .settings-panel {
                 width: 100%;
-                height: 300px; /* Fixed height for settings on mobile */
+                height: auto; /* Auto height for settings on mobile */
+                max-height: 40vh; /* Limit settings panel height */
                 flex-shrink: 0;
                 border-left: none;
                 border-top: 1px solid #333;
@@ -209,8 +227,11 @@
                 <label for="separationForce">Separation <span class="value-display" id="separationForceValue">1.2</span></label>
                 <input type="range" id="separationForce" min="0" max="3" value="1.2" step="0.1">
             </div>
-
-            <button id="resetButton" class="btn">Reset Simulation</button>
+            
+            <div class="panel-footer">
+                <button id="fullscreenButton" class="btn">View Fullscreen</button>
+                <button id="resetButton" class="btn">Reset Simulation</button>
+            </div>
         </div>
     </div>
 
@@ -237,7 +258,8 @@
             alignmentForce: document.getElementById('alignmentForce'),
             cohesionForce: document.getElementById('cohesionForce'),
             separationForce: document.getElementById('separationForce'),
-            resetButton: document.getElementById('resetButton')
+            resetButton: document.getElementById('resetButton'),
+            fullscreenButton: document.getElementById('fullscreenButton') // Get the new button
         };
 
         const valueDisplays = {
@@ -273,6 +295,19 @@
         });
         
         inputs.resetButton.addEventListener('click', initializeSimulation);
+        
+        // Fullscreen button event listener
+        inputs.fullscreenButton.addEventListener('click', () => {
+            if (canvas.requestFullscreen) {
+                canvas.requestFullscreen();
+            } else if (canvas.mozRequestFullScreen) { // Firefox
+                canvas.mozRequestFullScreen();
+            } else if (canvas.webkitRequestFullscreen) { // Chrome, Safari and Opera
+                canvas.webkitRequestFullscreen();
+            } else if (canvas.msRequestFullscreen) { // IE/Edge
+                canvas.msRequestFullscreen();
+            }
+        });
 
         // --- Vector Math Helpers ---
         class Vector {
@@ -321,56 +356,40 @@
                 for (let other of neighbors) {
                     let d = Vector.sub(this.position, other.position).mag();
                     if (other !== this && d < settings.perceptionRadius) {
-                        // Alignment: Steer towards the average heading of neighbors
                         alignment.add(other.velocity);
-
-                        // Cohesion: Steer to move toward the average position of neighbors
                         cohesion.add(other.position);
-
-                        // Separation: Steer to avoid crowding neighbors
                         let diff = Vector.sub(this.position, other.position);
-                        if (d > 0) { // Avoid division by zero
-                            diff.div(d * d); // Weight by inverse square of distance
+                        if (d > 0) {
+                            diff.div(d * d);
                         }
                         separation.add(diff);
-                        
                         total++;
                     }
                 }
 
                 if (total > 0) {
-                    alignment.div(total).normalize().mult(this.maxSpeed);
-                    alignment.sub(this.velocity).limit(this.maxForce);
-
-                    cohesion.div(total);
-                    cohesion.sub(this.position).normalize().mult(this.maxSpeed);
-                    cohesion.sub(this.velocity).limit(this.maxForce);
-
-                    separation.div(total).normalize().mult(this.maxSpeed);
-                    separation.sub(this.velocity).limit(this.maxForce);
+                    alignment.div(total).normalize().mult(this.maxSpeed).sub(this.velocity).limit(this.maxForce);
+                    cohesion.div(total).sub(this.position).normalize().mult(this.maxSpeed).sub(this.velocity).limit(this.maxForce);
+                    separation.div(total).normalize().mult(this.maxSpeed).sub(this.velocity).limit(this.maxForce);
                 }
                 
-                // Apply forces with weights from settings
                 this.acceleration.add(alignment.mult(settings.alignmentForce));
                 this.acceleration.add(cohesion.mult(settings.cohesionForce));
                 this.acceleration.add(separation.mult(settings.separationForce));
             }
 
-            // Update agent's state
             update() {
                 this.velocity.add(this.acceleration);
                 this.velocity.limit(this.maxSpeed);
                 this.position.add(this.velocity);
-                this.acceleration.mult(0); // Reset acceleration each frame
+                this.acceleration.mult(0);
             }
 
-            // Draw the agent on the canvas
             draw() {
                 ctx.save();
                 ctx.translate(this.position.x, this.position.y);
                 ctx.rotate(Math.atan2(this.velocity.y, this.velocity.x));
                 ctx.beginPath();
-                // Triangle shape
                 ctx.moveTo(this.radius * 2, 0);
                 ctx.lineTo(-this.radius, this.radius);
                 ctx.lineTo(-this.radius, -this.radius);
@@ -391,10 +410,9 @@
         }
 
         function animate() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; // Fading trail effect
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Re-create agent list if count has changed
             if (agents.length !== settings.agentCount) {
                 initializeSimulation();
             }
@@ -414,6 +432,8 @@
             const container = canvas.parentElement;
             canvas.width = container.clientWidth;
             canvas.height = container.clientHeight;
+            // When resizing while in fullscreen, the canvas dimensions can change.
+            // We re-initialize to avoid agents being spawned off-screen.
             initializeSimulation();
         }
 
